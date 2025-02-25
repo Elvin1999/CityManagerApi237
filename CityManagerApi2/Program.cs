@@ -1,7 +1,10 @@
 using CityManagerApi2.Data;
 using CityManagerApi2.Data.Abstract;
 using CityManagerApi2.Data.Concrete;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +25,23 @@ builder.Services.AddDbContext<AppDataContext>(option =>
     option.UseSqlServer(conn);
 });
 
+var key = Encoding.ASCII.GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey=new SymmetricSecurityKey(key),
+            ValidateIssuer=false,
+            ValidateAudience=false,
+        };
+    });
+
+
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -33,6 +53,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
